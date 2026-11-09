@@ -3,6 +3,15 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.25.1 (SD loader)
+v0.25 plus automatic SD loading and the drive-mode restart fix. Emulator only; no camera test yet. Downstream build; not an upstream release.
+
+- **Automatic SD loading:** the card's files load shortly after the card is ready, without a half-press first (a worker task wakes
+  the HLS task, which runs the same gate as the half-press hook; the half-press and OK triggers stay). `docs/SD_LOADER.md`.
+- **Fix: restart after changing the drive mode** (upstream a71bd6b, from v0.26, WB part only): the WB grid row took the drive-mode
+  list's screen element; it now only uses Picture Mode's.
+- `NAMES.BIN`'s loader moved to `.ext11` to make room; behaviour unchanged.
+
 ## v0.25
 Fast colour film grain, a WB grid row, a Glow row, settings kept over power off, and 20 new film sims. Firmware
 camera-tested (2026-11-08, build fx3); the 20 film sims were tuned on the Control Panel's preview.
