@@ -2086,6 +2086,13 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Released as v0.26.1 from build wb7: the branch rebuilds it byte for byte (E1479999.BIN dec03d2f…, GUIDES.BIN
   d2476a54…), and `patch.py --release v0.26.1` reproduces the same files. Optional LOOKS.BIN 26998eeb… (the tuned 20).
 
+## v0.26.4: the camera's own WB screen on the WB row (2026-11-09; emulator only, camera test pending; branch wbrecall/v0.26.4)
+- Owner: on the WB row of COLOR 1-4 open the camera's full WB menu (WB mode incl. Custom Kelvin) instead of the WB-shift screen; keep the film's own shift one step deeper
+  (the WB± icon). Change: `pm_ev` returns 0x0417 (not 0x0408); `gx_map` handles leaving 0x0417 (icon -> 0x0408 stays, MENU -> 0x0418 on the row, else stock) and MENU in 0x0408
+  -> 0x0417 stock. Emulator (om-emu 147ca89c): in the dispatcher OK press 0x900c, MENU 0x900e, S1 0x9000 (0x972b after other routes) all give next state 0x0104 from 0x0417, so
+  the ending event at (16,sp) tells them apart; redirecting OK to 0x0418 makes Picture Mode lose keys (the stock OK handler posts the leave) and is not done.
+  Details: docs/DEVELOPER_NOTES.md ("v0.26.4"). Camera unknown: the event codes of MENU / OK / half-press in the WB screen, the first-use of 0x0417 from Picture Mode.
+
 ## v0.26.3: the 0xFF fix and automatic WB save (2026-11-09; emulator only, camera test pending; branch wbrecall/v0.26.3)
 - Camera report on v0.26.2: set WB on any film but film 1 and it stays on every film (films without a stored WB follow the body; INFO-only take). The card also showed
   the camera had written a `BUNDLES.BIN` with 0xFF at slot `+59..+62` / `+55..+58`, which the firmware refuses at the next boot. Cause: the EDITS image block is

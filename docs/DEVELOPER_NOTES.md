@@ -474,6 +474,22 @@ v0.24 (below) with two changes; v0.24 itself was withdrawn and `releases/v0.24` 
 - Firmware `E1479999.BIN` 6fbc80b8…, `GUIDES.BIN` 112e8f93… (7 bytes differ from the GUIDES-only hotfix: code
   addresses after `pm_list` moved by one word), `LABELS.BIN` unchanged.
 
+## v0.26.4 the camera's own WB screen on the WB row (branch wbrecall/v0.26.4; emulator only, no camera test)
+
+Research trail: `research/caduceus-v026-wbrecall/v0.26.4/REPORT.md` in the owner's research workspace (not in this repository).
+
+- **Route:** `pm_ev` (hook `0x6125becc`) returns `0x0417` (`ID_ST_DIRECT_WB`, with `d1` = 8 as before) instead of `0x0408` on the events that opened the fine-tune screen
+  (`0x900c`, `0x9008` / `0x900a`, `0x9031` / `0x9032`, `0xf83c`, `0x9755` code 9); `gr_flag` = film + 1 and `gr_fine` = 1 stay as they were.
+- **`gx_map`** (hook `0x610f6016`; current state halfword `0x1704` = 0x0417, `0x0804` = 0x0408; the ending event is the word at `(16,sp)` of the dispatcher's frame:
+  OK `0x900c`, MENU `0x900e`, shutter keys `0x9000..0x9005`, time-out `0x972b`): leaving 0x0417 while `gr_fine` is set -> `0x0408` (the WB± icon) stays; to `0x0104` on
+  MENU -> `0x0418` with `gr_hold` / `gr_wait` (Picture Mode on the WB row, as the v0.26.1 MENU return); anything else -> as stock, flags cleared. Leaving 0x0408 while
+  `gr_fine` is set: MENU (`0x0417`) stays stock, anything else clears. OK is **not** redirected: its stock handler posts the leave itself and Picture Mode then stops
+  taking keys (emulator: the first `up` after OK is lost). Camera unknown: whether MENU / OK / half-press reach the dispatcher under these codes (the camera sent OK on
+  Picture Mode as other events than `0x900c`, see v0.25 test 12); a MENU that arrives otherwise leaves to live view (stock).
+- **Film shift:** unchanged. While `gr_flag` is set `gr_id` answers the 13 + 13 per-mode A-B / G-M ids from slot `+26` / `+27`, so the WB screen's WB± cell and its fine-tune
+  screen read and write the film. No file format change (`RANGES`, `tw_san` untouched). WB mode / Kelvin changes in the WB screen reach `sl_wb` (v0.26.3) as any other.
+- **Space:** `.ext11` 65120 / 65536 (+64); `.ext3` 483 / 492, `.ext9` 378 / 384, `.ext4` 1580 / 1776 unchanged; `GUIDES.BIN` 13480 B (relocations moved only).
+
 ## v0.26.3 the 0xFF fix and automatic WB save (branch wbrecall/v0.26.3; emulator only, no camera test)
 
 Research trail: `research/caduceus-v026-wbrecall/v0.26.3/REPORT.md` in the owner's research workspace (not in this repository).

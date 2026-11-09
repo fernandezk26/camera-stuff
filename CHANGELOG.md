@@ -3,6 +3,16 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.26.4 (the camera's own WB screen on the WB row)
+v0.26.3 plus one change, nothing else. Emulator only; no camera test yet. Downstream build; not an upstream release.
+
+- **The WB row of Picture Mode (COLOR 1–4) opens the camera's full white balance screen** (WB mode, Custom WB with its Kelvin, Keep Warm, the WB± cell) instead of the
+  WB shift (fine-tune) screen. A WB mode or Kelvin you set there is saved into the film that the COLOR holds, by v0.26.3's automatic save. The film's own WB shift
+  (A-B / G-M, −7..+7) is kept: the WB± cell shows it and its icon opens the same fine-tune screen as before, one step deeper (files unchanged, no format change).
+  **MENU** in the WB screen comes back to the WB row; **MENU** in the fine-tune screen goes back to the WB screen; **OK** or a half-press leaves to live view, as the
+  camera's own screen does from the Super Control Panel.
+- Space: `.ext11` +64 bytes (65120 / 65536); every other section and `GUIDES.BIN` (13480 B) unchanged.
+
 ## v0.26.3 (the 0xFF fix + automatic WB save into the film)
 v0.26.2 plus two things, nothing else. Emulator only; no camera test yet. Downstream build; not an upstream release.
 
