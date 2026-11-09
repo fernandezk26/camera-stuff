@@ -2,10 +2,9 @@
 # are attached to its release.
 # A folder may hold COMMIT (a commit SHA) to tag an earlier commit; otherwise the release tags this push.
 name: Releases
+# Fork: no automatic publishing on push (a first push of this fork's history would publish every upstream release
+# folder as a release here). Run it by hand from the Actions tab when a release really should be published.
 on:
-  push:
-    branches: [main]
-    paths: ['releases/**']
   workflow_dispatch:
 permissions:
   contents: write
