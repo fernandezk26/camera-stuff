@@ -13,7 +13,7 @@ v0.26.1.1 plus a stored white balance per film, nothing else. Emulator only; no 
 - Kept like the other changes: `BUNDLES.BIN` (live, at the half-press) and `EDITS.BIN` (when you leave the film). `LOOKS.BIN` and the
   Control Panel are untouched; the camera clears the four bytes from `LOOKS.BIN` before it writes it. An older firmware refuses a
   `BUNDLES.BIN` that carries a stored WB (the COLOR 1–4 slot bank then starts neutral until its next save; `BUNDLES.BAK` is the previous file).
-- Space: `.ext3` +8, `.ext9` +16, `.ext11` +64 bytes; the `GUIDES.BIN` code block +280 (new entries +152, +160). Format notes: `docs/FORMATS.md`.
+- Space: `.ext3` +8, `.ext9` +16, `.ext11` +64 bytes; the `GUIDES.BIN` code block +268 B of code (`GUIDES.BIN` +280; new entries +152, +160). Format notes: `docs/FORMATS.md`.
 
 ## v0.26.1.1 (SD loader)
 v0.26.1 plus automatic SD loading, nothing else. Emulator only; no camera test yet. Downstream build; not an upstream release.
