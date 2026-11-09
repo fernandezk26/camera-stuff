@@ -5,6 +5,7 @@ card files it needs, the expected checksums, and short notes. No OM firmware is 
 
 | Version | What's new | Status |
 |---|---|---|
+| [v0.26.1.1](v0.26.1.1/NOTES.md) | v0.26.1 + automatic SD loading (downstream build, nothing else added) | Emulator only |
 | [v0.26.1](v0.26.1/NOTES.md) | WB shift −7..+7 in `LOOKS.BIN` (v0.26 refused a file past ±5); the 20 film sims tuned from colour-checker photos (optional `LOOKS.BIN`) | Camera-tested (firmware) |
 | [v0.26](v0.26/NOTES.md) | Split toning (Shadows and Highlights wheel pages, shown in live view; new `TONES.BIN`); fix for a restart after changing the drive mode; the 20 film sims with light split tones (optional `LOOKS.BIN`) | Camera-tested (firmware) |
 | [v0.25](v0.25/NOTES.md) | Fast colour film grain with every setting; WB grid row (OK opens the camera's WB fine-tune screen); Glow row (+ Glow / − Clarity); Shading back; settings and the film kept over power off; no Art Effects; 20 new film sims (optional `LOOKS.BIN`) | Camera-tested (firmware) |

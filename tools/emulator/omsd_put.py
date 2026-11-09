@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Replace (or create in place) a file in an om-emu OMSD card image's FAT32 volume, without mtools.
-Only the case the lab needs: the 8.3 file already exists in DIR and the new content fits its cluster chain.
-usage: omsd_put.py IN.omsd OUT.omsd DOS_DIR DOS_NAME LOCAL_FILE   (names upper case, e.g. OM3MOD GUIDES.BIN)"""
+"""Replace or create a file in an om-emu OMSD card image's FAT32 volume, without mtools.
+The 8.3 file's directory (DIR) must exist. An existing file is rewritten in its cluster chain (the chain grows if the new
+content is longer); a missing file gets a new short-name directory entry and a new chain (v0.26.1.1: TONES.BIN). Both FAT
+copies are updated; FSInfo is not (the lab does not read it). usage: omsd_put.py IN.omsd OUT.omsd DOS_DIR DOS_NAME LOCAL_FILE   (names upper case, e.g. OM3MOD GUIDES.BIN)"""
 import struct, sys
 inp, outp, ddir, dname, local = sys.argv[1:6]
 b = open(inp, 'rb').read()
@@ -47,11 +48,50 @@ def n83(n):
 hit = find(root, n83(ddir)); assert hit, ddir
 s, off = hit
 dclus = (struct.unpack_from('<H', s, off + 20)[0] << 16) | struct.unpack_from('<H', s, off + 26)[0]
-hit = find(dclus, n83(dname)); assert hit, dname
-s, off = hit
-fclus = (struct.unpack_from('<H', s, off + 20)[0] << 16) | struct.unpack_from('<H', s, off + 26)[0]
-ch = chain(fclus)
 payload = open(local, 'rb').read()
+need = max(1, -(-len(payload) // (spc * 512)))
+def fat_set(c, v):
+    for f in range(nfat):
+        s_, o_ = divmod(c * 4, 512)
+        x = sec(part + rsv + f * fatsz + s_)
+        old = struct.unpack_from('<I', x, o_)[0]
+        struct.pack_into('<I', x, o_, (old & 0xf0000000) | v)
+def alloc(n, taken):
+    out, c = [], 2
+    while len(out) < n:
+        assert c < (fatsz * 512) // 4, 'card image full'
+        if fat_get(c) == 0 and c not in taken: out.append(c)
+        c += 1
+    return out
+hit = find(dclus, n83(dname))
+if hit:
+    s, off = hit
+    fclus = (struct.unpack_from('<H', s, off + 20)[0] << 16) | struct.unpack_from('<H', s, off + 26)[0]
+    ch = chain(fclus)
+    if len(ch) < need:
+        extra = alloc(need - len(ch), set(ch))
+        for a_, b_ in zip(ch[-1:] + extra, extra): fat_set(a_, b_)
+        ch += extra; fat_set(ch[-1], 0x0fffffff)
+    created = False
+else:                                          # new file: first free directory slot, new chain
+    ch = alloc(need, set())
+    for a_, b_ in zip(ch, ch[1:]): fat_set(a_, b_)
+    fat_set(ch[-1], 0x0fffffff)
+    slot = None
+    for cl in chain(dclus):
+        for i in range(spc):
+            s_ = sec(clus_lba(cl) + i)
+            for off_ in range(0, 512, 32):
+                if s_[off_] in (0, 0xe5): slot = (s_, off_); break
+            if slot: break
+        if slot: break
+    assert slot, 'directory cluster full'
+    s, off = slot
+    s[off:off + 32] = bytes(32)
+    s[off:off + 11] = n83(dname)
+    s[off + 11] = 0x20
+    struct.pack_into('<H', s, off + 20, ch[0] >> 16); struct.pack_into('<H', s, off + 26, ch[0] & 0xffff)
+    created = True
 cap = len(ch) * spc * 512
 assert len(payload) <= cap, (len(payload), cap)
 pad = payload + bytes(cap - len(payload))
@@ -65,4 +105,4 @@ out = bytearray(b[:16])
 struct.pack_into('<I', out, 12, len(keys))
 for key in keys: out += struct.pack('<I', key) + bytes(data[key])
 open(outp, 'wb').write(out)
-print('replaced', ddir + '/' + dname, len(payload), 'bytes in', len(ch), 'cluster(s) of', spc * 512)
+print('created' if created else 'replaced', ddir + '/' + dname, len(payload), 'bytes in', len(ch), 'cluster(s) of', spc * 512)

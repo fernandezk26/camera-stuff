@@ -3,6 +3,14 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.26.1.1 (SD loader)
+v0.26.1 plus automatic SD loading, nothing else. Emulator only; no camera test yet. Downstream build; not an upstream release.
+
+- **Automatic SD loading:** the card's files (including `TONES.BIN` and `LOOKS.BIN`) load shortly after the card is ready,
+  without a half-press first (a worker task wakes the HLS task, which runs the same gate as the half-press hook; the
+  half-press and OK triggers stay). Same worker as v0.25.1. `docs/SD_LOADER.md`.
+- `NAMES.BIN`'s loader moved to `.ext11` to make room; behaviour unchanged.
+
 ## v0.26.1
 WB shift up to ±7 in films, and the 20 film sims tuned from colour-checker photos. Firmware camera-tested (2026-11-09,
 build wb7).

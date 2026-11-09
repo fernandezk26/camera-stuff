@@ -1,4 +1,4 @@
-# Automatic SD loading (v0.25.1-sdload)
+# Automatic SD loading (v0.25.1, ported to v0.26.1 as v0.26.1.1)
 
 **Status: emulator only. Not camera-qualified by this project.** The worker's design and its offline qualification come
 from a separate research track (its hardware unknowns are listed below); this document records what the patch does and what
@@ -6,7 +6,8 @@ has and has not been shown.
 
 ## What it does
 
-Upstream v0.25 loads the card block (`OM3MOD/BUNDLES.BIN`, `GUIDES.BIN`, `LABELS.BIN`, `LOOKS.BIN`, `NAMES.BIN`) from the
+Upstream v0.25 and v0.26.x load the card block (`OM3MOD/BUNDLES.BIN`, `GUIDES.BIN`, `LABELS.BIN`, `LOOKS.BIN`, `NAMES.BIN`, and
+since v0.26 `TONES.BIN`, read inside `pf_load` by `fl_mk2`: the same `sd_load` chain) from the
 shutter-event hook (`pr_hook`, stock `0x60415216`) through `pr_gate`: nothing loads until the first half-press (or other
 shutter event) after power-on. This patch adds a small worker task that loads it **without a key press**:
 
@@ -31,9 +32,20 @@ medium words reused from `editor.ld`); the original keeps its own gate (`gate`) 
 
 **Room.** `.ext4` had 16 free bytes; the worker is 391 bytes. `nm_load`, `nm_pick` and `nm_path` (the `NAMES.BIN` loader)
 moved from `.ext4` to `.ext11`: they run only after `pr_gate`, when every section is loaded, so `NAMES.BIN` still works.
-`.ext4` is now 1,564 of 1,776 bytes, `.ext11` 63,200 of 65,536.
+`.ext4` is now 1,564 of 1,776 bytes; `.ext11` 64,544 of 65,536 on v0.26.1 (63,936 without the worker).
 
-## What was checked
+## v0.26.1 port (v0.26.1.1)
+
+The v0.25.1 commit was re-applied on tag `v0.26.1` with one textual conflict (both sides append at the end of `editor.s`: v0.26's
+split-toning code and this block); the worker itself is unchanged. Checked against v0.26.1 before building: the stock bytes at
+`0x60af0fb9` (`cd4600f018`) and `0x60af101c` (`cdbe000000`) are asserted by the build and held; no other `HOOKS` / `editor.ld`
+entry uses those addresses; `pr_hook` / `pr_gate` are as in v0.25 (the WB fix touched neither); `TONES.BIN` is loaded by `pf_load` /
+`fl_mk2` inside `sd_load`, i.e. behind the same gate; `nm_load` / `nm_pick` have the same callers (`sd_load`, `gd_set`).
+Emulator (om-emu `147ca89c`): the card block, including `LOOKS.BIN` and `TONES.BIN`, is published within 500 ms with no key
+press on this build; `STATE` stays 0 on an unmodified v0.26.1 built the same way; upstream's drive-mode recipe completes; the
+Shadows / Highlights page walk (INFO) gives the same guide descriptors as the unmodified build.
+
+## What was checked (v0.25.1)
 
 - Builds (`firmware/build.py`; stock bytes at both hook sites asserted; all six container checksums hold; components 1-5
   equal to the release's).
@@ -53,4 +65,4 @@ part another party has camera-tested (upstream, as its v0.26 build).
 
 `firmware/mkicons.py` and `card/mk*.py` render pictures with DejaVu Sans Condensed. Rendering differs slightly between
 FreeType/Pillow versions, so a source build on another machine is not byte-identical to a release's pictures
-(and the length constants that follow them). Use `patch.py --release v0.25.1-sdload` for the exact package.
+(and the length constants that follow them). Use `patch.py --release v0.26.1.1` for the exact package (its pictures are the local-font ones this build was made with).
