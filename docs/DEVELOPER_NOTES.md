@@ -474,6 +474,22 @@ v0.24 (below) with two changes; v0.24 itself was withdrawn and `releases/v0.24` 
 - Firmware `E1479999.BIN` 6fbc80b8…, `GUIDES.BIN` 112e8f93… (7 bytes differ from the GUIDES-only hotfix: code
   addresses after `pm_list` moved by one word), `LABELS.BIN` unchanged.
 
+## v0.26.3 the 0xFF fix and automatic WB save (branch wbrecall/v0.26.3; emulator only, no camera test)
+
+Research trail: `research/caduceus-v026-wbrecall/v0.26.3/REPORT.md` in the owner's research workspace (not in this repository).
+
+- **Defect (camera report, 9 Nov 2026):** `fl_mk`'s heap block (`SP_BLK`, the EDITS.BIN image at `+TWO`) was not zeroed, so record bytes that `pf_capto`
+  never writes kept 0xFF; `pf_put1` copied `+53..+60` through `pf_bt` into the live slot and `ed_save` wrote the 544 B image to `BUNDLES.BIN`, which
+  `sd_check` refuses (flag 0..1, mode 0..18, split-toning colours 0..11). **Fix:** `fl_mk` zeroes the whole `SP_BLK` after the malloc; `tw_san` (ext11, after the
+  file CRC passes) sets a record's `+53..+56` / `+57..+60` group to 0 when a byte is out of range, `+61 / +62` to 0, `+63` to 0 on films; `pf_wbr` (end of
+  every film load) runs `sd_san` over the live slots; `ed_save` runs `sd_san` over its image copy before the CRC. `sd_san` uses the table `sd_check`
+  uses (`sd_lo` / `sd_span`, from `RANGES`), so it cannot disagree with it; 0 is inside every range.
+- **Auto-save:** `sl_set` (the facade SetValue's manager hook) sends ids 1578 / 1632 to `sl_wb` (ext11): unless `wb_guard` is set (1 while `pf_wbr`'s recall runs),
+  `wb_mir` mirrors the new value **before** the stock manager runs (the value asked for, not a read-back): setting 111 -> `fl_k` -> COLOR k, `LIDX` 1..5,
+  bank loaded; mode > 18 ignored; mode change: flag 1, mode, Kelvin = the body's 1632 when mode 9 else 0; Kelvin change: only while the body's mode is 9;
+  `DIRTY`. `sl_wb` ends with the stock manager as a tail jump with MDR put back from `(68,sp)` (as `s_dirty`). The card write stays the half-press save.
+- **Space:** `.ext4` 1580 / 1776 (+16), `.ext11` 65056 / 65536 (+448), `.ext3` / `.ext9` unchanged (483 / 492, 378 / 384), `GUIDES.BIN` 13480 B of 16448 (relocations moved only).
+
 ## v0.26.2 stored WB per film (branch wbrecall/v0.26.2; emulator only, no camera test)
 
 Research trail: `research/caduceus-wb-recall-feasibility/REPORT.md` and `research/caduceus-v026-wbrecall/REPORT.md` in the owner's

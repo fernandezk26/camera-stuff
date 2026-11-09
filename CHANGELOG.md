@@ -3,6 +3,23 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.26.3 (the 0xFF fix + automatic WB save into the film)
+v0.26.2 plus two things, nothing else. Emulator only; no camera test yet. Downstream build; not an upstream release.
+
+- **Fix: 0xFF bytes in `EDITS.BIN` no longer reach `BUNDLES.BIN`.** The camera's `EDITS.BIN` held 0xFF in record bytes `+53..+63` (the heap block that holds the
+  image was never zeroed, so bytes that `pf_capto` does not write kept whatever the memory held; the D-era file already had them). Loading such a
+  film copied them into the live COLOR slot, and the camera then wrote a `BUNDLES.BIN` its own check refuses at the next power-on (the slot bank
+  started neutral). Now the image block is zeroed when it is made, a good `EDITS.BIN` is sanitised when it is read (split toning and stored WB groups
+  out of range become 0), the live slots are sanitised after every film load, and `ed_save` clears any byte outside the range table in its copy before
+  the CRC, so a refused `BUNDLES.BIN` is never written. A `BUNDLES.BIN` that already carries 0xFF is still refused once at boot (delete it for a clean
+  start; the next half-press writes a good one).
+- **Automatic save of WB changes into the film.** While a COLOR holds a film, any change of the body's WB mode (setting 1578) or Kelvin (1632) is copied
+  into that film (flag 1, mode, Kelvin only for Custom WB) and marks it changed, so the film remembers every WB change without INFO; selecting the film
+  later recalls it as in v0.26.2. The write to the card is still the half-press save. The recall's own writes, COLOR 1–4 themselves and other picture
+  modes store nothing. INFO on the WB row is unchanged (takes the body's WB, or lets it go when the film already holds exactly that; the next WB change
+  stores again).
+- Space: `.ext4` +16, `.ext11` +448 bytes; `GUIDES.BIN` the same size (13480 B; its relocations moved). Format notes: `docs/FORMATS.md`.
+
 ## v0.26.2 (stored WB per film)
 v0.26.1.1 plus a stored white balance per film, nothing else. Emulator only; no camera test yet. Downstream build; not an upstream release.
 

@@ -55,7 +55,7 @@ COLOR 1–4's own settings while a film sits on that COLOR. The films as built s
 Records 0..19 = film j (the `LOOKS.BIN` record of the same number; its check is the CRC-32 of that `LOOKS.BIN`
 record when the changes were saved, so a film rebuilt in the Control Panel starts again as built). Records 20..23 =
 COLOR 1–4's own settings (check 0). A file that fails the size, magic or CRC check is ignored. Deleting it puts every
-film back as built. The records are not range-checked on load. v0.26.2 keeps a film's stored WB in record bytes
+film back as built. The records are not range-checked by the firmware's file check; **v0.26.3 sanitises a good file when it reads it** (record bytes `+53..+56` split toning and `+57..+60` stored WB: a group with a byte out of range is set to 0; `+61`, `+62` to 0; `+63` to 0 on films, kept on COLOR own records when 0 or 1) and zeroes the image block when it is made, so it never writes 0xFF in those bytes. v0.26.2 keeps a film's stored WB in record bytes
 `+57..+60` (flag, mode, Kelvin low, Kelvin high; the same four bytes as the slot's `+59..+62`); older builds ignore them.
 `LOOKS.BIN` never carries them (record `+57..+63` stay 0, `pf_check` refuses the file otherwise; v0.26.2 clears them before every
 `LOOKS.BIN` write).
@@ -71,7 +71,7 @@ u32 payload 512 | u32 CRC-32 over bytes 0..15 + 20..543 | 4 bytes decoded-firmwa
 **v0.26.2: `+59` stored-WB flag (0 follows the body, 1 stored), `+60` WB mode (the camera's setting 1578, 0..18), `+61 / +62` Kelvin
 (setting 1632, u16 little endian; kept for Custom WB, mode 9, else 0).** Every slot byte outside these fields must be 0: the camera
 refuses the whole file otherwise (v0.26.1.1 and older refuse a file that has `+59..+62` set, and the slot bank then starts neutral;
-`BUNDLES.BAK` keeps the previous file).
+`BUNDLES.BAK` keeps the previous file). **v0.26.3:** `ed_save` sets every payload byte outside the range table to 0 in its copy before the CRC (a byte that the firmware's own check would refuse is never written); a file that already carries such a byte is still refused when it is read.
 
 ## GUIDES.BIN v4
 

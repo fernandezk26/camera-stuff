@@ -9,6 +9,8 @@ Noise Filter, lens vignette correction, Shading, Glow / Clarity and fast colour 
 Panel**; changes you make on the camera are kept per film.
 
 > [!NOTE]
+> **Branch `wbrecall/v0.26.3` (downstream fork, emulator only, not camera-tested):** v0.26.2 plus the 0xFF fix and automatic saving of WB changes into the selected film. See `releases/v0.26.3/NOTES.md`.
+>
 > **Branch `wbrecall/v0.26.2` (downstream fork, emulator only, not camera-tested):** v0.26.1.1 plus a stored WB mode / Kelvin per film (INFO on the WB row). See `releases/v0.26.2/NOTES.md`.
 
 **Latest: v0.26.1** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·

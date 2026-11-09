@@ -5,6 +5,7 @@ card files it needs, the expected checksums, and short notes. No OM firmware is 
 
 | Version | What's new | Status |
 |---|---|---|
+| [v0.26.3](v0.26.3/NOTES.md) | v0.26.2 + the 0xFF fix + automatic WB save into the selected film. Downstream build | Emulator only |
 | [v0.26.2](v0.26.2/NOTES.md) | v0.26.1.1 + a stored WB mode / Kelvin per film (INFO on the WB row; recalled when the film is selected). Downstream build | Emulator only |
 | [v0.26.1.1](v0.26.1.1/NOTES.md) | v0.26.1 + automatic SD loading (downstream build, nothing else added) | Emulator only |
 | [v0.26.1](v0.26.1/NOTES.md) | WB shift −7..+7 in `LOOKS.BIN` (v0.26 refused a file past ±5); the 20 film sims tuned from colour-checker photos (optional `LOOKS.BIN`) | Camera-tested (firmware) |

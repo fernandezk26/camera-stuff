@@ -918,6 +918,9 @@ ed_save:
  inc d2
  cmp FILE_LEN,d2
  bne 1b
+ mov a3,a0                        /* v0.26.3: the image's slots: a byte outside sd_check's ranges <- 0, so a refused BUNDLES.BIN is never written */
+ add HDR_LEN,a0
+ call sd_san,[d2,d3],12
  mov -1,d0                        /* header CRC-32 of S[0..15] + S[20..543] at S+16 */
  mov a3,a0
  mov 16,d1
@@ -3956,6 +3959,10 @@ sl_sel0:
 /* sl_set <- .hook_set (the facade SetValue's manager call, entered as the manager: d0 id, d1 value, a0, a1 mode;
  * d2/d3/a2/a3 saved by the call, frame 68): our bar ids -> the slot byte, then ed_set's dirty + manager refresh. */
 sl_set:
+ cmp 1578,d0                      /* v0.26.3: the body's WB mode / Kelvin: mirrored into the film on COLOR k (sl_wb) */
+ beq sl_wb
+ cmp 1632,d0
+ beq sl_wb
  cmp 2148,d0                      /* the column's row memory (the stock setting refuses our row ids 5381..5394) */
  bne 1f
  movbu (gr_hold),d2
@@ -6093,8 +6100,15 @@ fl_mk:
  bne 91f
  jmp 99f
 91:
- mov a0,a1
+ mov a0,a1                        /* v0.26.3: the whole block zeroed (the heap does not: a film record's bytes that pf_capto never writes kept 0xFF) */
+ mov SP_BLK / 4,d1
  clr d0
+97:
+ mov d0,(a1)
+ add 4,a1
+ add -1,d1
+ bne 97b
+ mov a0,a1
  mov d0,(a1)
  mov d0,(4,a1)
  mov d0,(8,a1)
@@ -6141,11 +6155,15 @@ fl_mk:
  not d0
  mov (8,a3),d1
  cmp d0,d1
- beq 95f
+ beq 96f
 94:
  mov (60,sp),a0                   /* a bad file: nothing valid */
  clr d0
  mov d0,(12,a0)
+ bra 95f
+96:
+ mov (60,sp),a0                   /* v0.26.3: a good file: bytes out of range in the records' split toning / WB fields <- 0 */
+ call tw_san,[d2,a2],12
 95:
  mov (56,sp),a0
  mov (52,sp),a2
@@ -8406,11 +8424,18 @@ sdl_consume:
  * one. The block writes setting 1578 (and 1632) through the settings facade SetValue. */
 pf_wbr:
  mov d0,d2
+ mov a2,a0                        /* v0.26.3: the slots' bytes out of range <- 0 (a film record from an EDITS.BIN with 0xFF) before anything reads them */
+ add 32,a0
+ call sd_san,[d2,d3],12
  call xp,[],0                     /* clobbers d0 */
  beq 9f
  add 152,a1
  mov d2,d0
+ mov 1,d3
+ movbu d3,(wb_guard)              /* our own recall's SetValues are not stored back into the film (sl_wb) */
  calls (a1)
+ clr d3
+ movbu d3,(wb_guard)
 9:
  ret [d2,d3,a2,a3],20
 
@@ -8429,3 +8454,173 @@ pf_scrub:
  add -1,d1
  bne 1b
  retf [],0
+
+/* ------------------------------------------------------------------ v0.26.3: the 0xFF fix and auto-save (research/caduceus-v026-wbrecall/v0.26.3)
+ * sd_san: `call sd_san,[d2,d3],12`, a0 = 8 slots x 64 B: every byte outside sd_check's range table (sd_lo / sd_span, the one
+ * that refuses a BUNDLES.BIN) <- 0 (0 is inside every range). Used on the live slots (pf_wbr) and on ed_save's image copy.
+ * Uses d0, d1, a0, a1. */
+sd_san:
+ clr d2
+1:
+ movbu (d2,a0),d0
+ extb d0
+ mov d2,d1
+ and 63,d1
+ mov sd_lo,a1
+ movbu (d1,a1),d3
+ extb d3
+ sub d3,d0
+ mov sd_span,a1
+ movbu (d1,a1),d3
+ cmp d3,d0
+ bls 2f
+ clr d0
+ movbu d0,(d2,a0)
+2:
+ inc d2
+ cmp PAYLOAD_LEN,d2
+ bne 1b
+ ret [d2,d3],12
+
+/* tw_san: `call tw_san,[d2,a2],12` from fl_mk, a0 = the EDITS.BIN image after its CRC passed. Each of the 24 records (+16 + 68 r):
+ * +53..+56 (split toning: colours 0..11, strengths -5..5) and +57..+60 (stored WB: flag 0..1, mode 0..18) <- 0 as a group when
+ * a byte is out of range (the camera wrote 0xFF there); +61, +62 <- 0; +63 <- 0 (films), a COLOR's own record keeps its 0 / 1.
+ * Uses d0, d2, a0, a2. */
+tw_san:
+ add 16,a0
+ mov a0,a2
+ mov 24,d2
+1:
+ movbu (53,a2),d0
+ cmp 11,d0
+ bhi 2f
+ movbu (54,a2),d0
+ add 5,d0
+ cmp 10,d0
+ bhi 2f
+ movbu (55,a2),d0
+ cmp 11,d0
+ bhi 2f
+ movbu (56,a2),d0
+ add 5,d0
+ cmp 10,d0
+ bhi 2f
+ bra 3f
+2:
+ clr d0
+ movbu d0,(53,a2)
+ movbu d0,(54,a2)
+ movbu d0,(55,a2)
+ movbu d0,(56,a2)
+3:
+ movbu (57,a2),d0
+ cmp 1,d0
+ bhi 4f
+ movbu (58,a2),d0
+ cmp 18,d0
+ bls 5f
+4:
+ clr d0
+ movbu d0,(57,a2)
+ movbu d0,(58,a2)
+ movbu d0,(59,a2)
+ movbu d0,(60,a2)
+5:
+ clr d0
+ movbu d0,(61,a2)
+ movbu d0,(62,a2)
+ movbu (63,a2),d0
+ cmp 4,d2
+ bhi 6f                           /* d2 counts 24 .. 1 down: 24 .. 5 = films 0..19, 4 .. 1 = COLOR 1..4 own */
+ cmp 1,d0
+ bls 7f
+6:
+ clr d0
+ movbu d0,(63,a2)
+7:
+ add 68,a2
+ add -1,d2
+ bne 1b
+ ret [d2,a2],12
+
+/* Auto-save of the body's WB into the film (owner 2026-11-09). sl_wb <- sl_set when the facade SetValue (the manager's d0 id,
+ * d1 value, a0, a1) is 1578 (WB mode) or 1632 (Kelvin): wb_mir copies the new value into the slot of the COLOR that shows
+ * a film (setting 111 picture mode -> k, LIDX 1..5, bank loaded): flag 1, mode, Kelvin (only Custom WB, mode 9, else 0),
+ * DIRTY. The write itself is the stock manager as before (a tail jump with MDR put back, as s_dirty). wb_guard is 1 while
+ * pf_wbr's recall writes: those are not stored. Nothing for COLOR k itself (look 0), other picture modes, a mode > 18. */
+wb_guard:
+ .long 0
+sl_wb:
+ movbu (wb_guard),d2
+ cmp 0,d2
+ bne 1f
+ movm [other],(sp)                /* d0, d1, a0, a1 for the manager */
+ add -4,sp
+ call wb_mir,[d2,d3,a2,a3],20
+ add 4,sp
+ movm (sp),[other]
+1:
+ mov (68,sp),d2                   /* MDR = the setter's return address again */
+ mov d2,mdr
+ jmp manager
+
+/* wb_mir: `call wb_mir,[d2,d3,a2,a3],20`, d0 = 1578 / 1632, d1 = the value. */
+wb_mir:
+ mov d0,d2                        /* id */
+ mov d1,a3                        /* value */
+ PVAL 9f                          /* a2 = P (uses d3) */
+ mov (LPTR,a2),d0
+ cmp 0,d0
+ beq 9f
+ mov 111,d0
+ call sget,[],4                   /* the picture mode (keeps d2, d3, a2, a3) */
+ call fl_k,[],0
+ cmp 0,d0
+ blt 9f
+ mov d0,d3                        /* k */
+ mov a2,a0
+ add d3,a0
+ movbu (LIDX,a0),d0
+ extb d0
+ cmp 1,d0
+ blt 9f
+ cmp 5,d0
+ bgt 9f
+ cmp 1578,d2
+ bne 5f
+ cmp 19,a3                        /* the new mode 0..18 */
+ bcc 9f
+ clr d1                           /* Kelvin: only Custom WB (9) keeps the body's */
+ cmp 9,a3
+ bne 3f
+ mov 1632,d0
+ call sget,[],4
+ exthu d0
+ mov d0,d1
+3:
+ mov a3,d0
+ bra 6f
+5:                                /* 1632: only while the body is in Custom WB */
+ mov 1578,d0
+ call sget,[],4
+ extbu d0
+ cmp 9,d0
+ bne 9f
+ mov a3,d1
+ exthu d1
+ mov 9,d0
+6:                                /* d0 mode, d1 Kelvin -> slot +60..+62, flag, DIRTY */
+ mov d3,d2
+ asl 6,d2
+ add 32,d2
+ mov a2,a0
+ add d2,a0
+ movbu d0,(60,a0)
+ movbu d1,(61,a0)
+ lsr 8,d1
+ movbu d1,(62,a0)
+ mov 1,d0
+ movbu d0,(59,a0)
+ movbu d0,(DIRTY,a2)
+9:
+ ret [d2,d3,a2,a3],20

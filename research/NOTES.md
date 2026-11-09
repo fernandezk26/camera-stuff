@@ -2086,6 +2086,15 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Released as v0.26.1 from build wb7: the branch rebuilds it byte for byte (E1479999.BIN dec03d2f…, GUIDES.BIN
   d2476a54…), and `patch.py --release v0.26.1` reproduces the same files. Optional LOOKS.BIN 26998eeb… (the tuned 20).
 
+## v0.26.3: the 0xFF fix and automatic WB save (2026-11-09; emulator only, camera test pending; branch wbrecall/v0.26.3)
+- Camera report on v0.26.2: set WB on any film but film 1 and it stays on every film (films without a stored WB follow the body; INFO-only take). The card also showed
+  the camera had written a `BUNDLES.BIN` with 0xFF at slot `+59..+62` / `+55..+58`, which the firmware refuses at the next boot. Cause: the EDITS image block is
+  not zeroed; the D-era EDITS.BIN already held 0xFF at record `+53..+63`. v0.26.3 zeroes the block, sanitises on read, sanitises the live slots after each
+  film load and the `ed_save` copy before its CRC; and mirrors every WB mode / Kelvin write (facade SetValue -> `sl_set` -> `sl_wb`) into the film that the
+  current COLOR holds. Details: docs/DEVELOPER_NOTES.md ("v0.26.3"). Emulator (om-emu 147ca89c): no write to 1578 / 1632 by power-on, mode dial 0..9, REC, PLAY, menus,
+  the stock WB screen or SCP (the emulator does not model real scene-mode or NVRAM restores: a camera question); the owner's real card files boot, 0xFF never
+  reaches BUNDLES.BIN / EDITS.BIN (v0.26.2 control does it), takes of film 1 / film 17 stay recallable.
+
 ## v0.26.2: stored WB per film (2026-11-09; emulator only, camera test pending; branch wbrecall/v0.26.2)
 - A film keeps a WB mode (setting 1578) and, for Custom WB, a Kelvin (1632) in four new slot / record bytes; INFO on the Picture Mode WB row takes the
   camera's current WB into the film (again = let go); a film change writes it back through the facade SetValue 0x60b8781f. Design and byte map:
