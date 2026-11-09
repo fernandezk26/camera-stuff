@@ -55,7 +55,10 @@ COLOR 1–4's own settings while a film sits on that COLOR. The films as built s
 Records 0..19 = film j (the `LOOKS.BIN` record of the same number; its check is the CRC-32 of that `LOOKS.BIN`
 record when the changes were saved, so a film rebuilt in the Control Panel starts again as built). Records 20..23 =
 COLOR 1–4's own settings (check 0). A file that fails the size, magic or CRC check is ignored. Deleting it puts every
-film back as built.
+film back as built. The records are not range-checked on load. v0.26.2 keeps a film's stored WB in record bytes
+`+57..+60` (flag, mode, Kelvin low, Kelvin high; the same four bytes as the slot's `+59..+62`); older builds ignore them.
+`LOOKS.BIN` never carries them (record `+57..+63` stay 0, `pf_check` refuses the file otherwise; v0.26.2 clears them before every
+`LOOKS.BIN` write).
 
 ## BUNDLES.BIN (544 bytes)
 
@@ -64,7 +67,11 @@ u32 payload 512 | u32 CRC-32 over bytes 0..15 + 20..543 | 4 bytes decoded-firmwa
 8 slots × 64 bytes (slot k = COLOR k+1): hue[12] `+0`, light[12] `+12`, `+25` WB flags (bit 0 on), `+26` A/B,
 `+27` G/M, `+31` flags (bit 1 = Hue/Light on), `+47` Blacks, `+48` Whites, v0.20 Extras: `+49` Glow/Clarity,
 `+50` Art Effect, `+51` NR (as the LOOKS.BIN record's `+47..+49`), v0.21: `+52` VigFix, `+53` Grain (the record's
-`+50`, `+51`), v0.22: `+54` Sharp (the record's `+52`).
+`+50`, `+51`), v0.22: `+54` Sharp (the record's `+52`), v0.26: `+55..+58` split toning (the record's `+53..+56`),
+**v0.26.2: `+59` stored-WB flag (0 follows the body, 1 stored), `+60` WB mode (the camera's setting 1578, 0..18), `+61 / +62` Kelvin
+(setting 1632, u16 little endian; kept for Custom WB, mode 9, else 0).** Every slot byte outside these fields must be 0: the camera
+refuses the whole file otherwise (v0.26.1.1 and older refuse a file that has `+59..+62` set, and the slot bank then starts neutral;
+`BUNDLES.BAK` keeps the previous file).
 
 ## GUIDES.BIN v4
 

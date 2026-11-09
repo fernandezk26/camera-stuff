@@ -2072,7 +2072,7 @@ pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd:
  movbu (d0,a0),d0
  movbu d0,(d1,a3)
  add 2,a1
- cmp pf_bt+30,a1
+ cmp pf_bt+38,a1
  bne 5b
  movbu (36,a3),d0
  and 1,d0                         /* WB on: bit 0 of the slot's WB flags */
@@ -2312,7 +2312,7 @@ pf_put1:                          /* v0.24 (fl_sw): (4) a0, (8) a1, (12) k set, 
 7:
  movbu d0,(d3,a0)
  add 2,a1
- cmp pf_bt+30,a1
+ cmp pf_bt+38,a1
  bne 8b
  movbu (7,a0),d0
  or 2,d0
@@ -2348,6 +2348,8 @@ pf_put1:                          /* v0.24 (fl_sw): (4) a0, (8) a1, (12) k set, 
  mov d3,(20,sp)
  cmp 18,d3
  bne 5b
+ mov (12,sp),d0                   /* v0.26.2: the film's stored WB (slot +59..+62) -> the body, code block +152 */
+ call pf_wbr,[d2,d3,a2,a3],20
  ret [d2,d3,a2,a3],40
 
 .section .ext1,"ax"
@@ -2387,6 +2389,7 @@ pf_save:
  mov (LPTR,a2),a3
  cmp 0,a3
  beq 9f
+ call pf_scrub,[],0               /* v0.26.2: LOOKS.BIN never carries a stored WB (record +57..+60 stay 0: pf_check rejects it) */
  clr d2
 1:
  mov a2,a0
@@ -2515,6 +2518,7 @@ pf_ids:                           /* u16 id for COLOR1, u8 step per COLOR, u8 re
 pf_bt:                            /* record offset, slot offset - 24 (v0.26: moved here from the sec-9 tail) */
  .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28, 51,29, 52,30
  .byte 53,31, 54,32, 55,33, 56,34  /* v0.26: split toning, record +53..+56 <-> slot +55..+58 */
+ .byte 57,35, 58,36, 59,37, 60,38  /* v0.26.2: stored WB (flag, mode 1578, Kelvin 1632 lo / hi), record +57..+60 <-> slot +59..+62 */
 pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0, 1 for byte 36 (WB on 0/1), else 0
                                      (test 18: the span half of this table is computed, to make room) */
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
@@ -4904,6 +4908,17 @@ pm_ev:
                                    * fine-tune screen's after MENU back from it) */
  cmp 0,d2
  beq 8f
+ cmp 0x9014,d0                    /* v0.26.2: INFO (press) on our row: the film takes the body's WB, or lets it go when it is the same
+                                   * (code block +160); the stock handler then runs as before (INFO is a no-op on this row) */
+ bne 1f
+ call xp,[],0
+ beq 8f
+ add 160,a1
+ add -1,d2                        /* gr_flag = COLOR k + 1 */
+ mov d2,d0
+ calls (a1)
+ bra 8f
+1:
  cmp 0x900c,d0
  beq 2f
  cmp 0x9008,d0                    /* left / right press: the same (no changes on the row itself) */
@@ -8382,3 +8397,35 @@ sdl_auto_gate_call:
 sdl_consume:
   jmp sdl_next_receive
 
+/* ------------------------------------------------------------------ v0.26.2: a film's stored WB (research/caduceus-v026-wbrecall)
+ * Four bytes: slot +59 flag (0 follows the body, 1 stored), +60 mode (setting 1578, 0..18), +61 / +62 Kelvin (1632, u16 little
+ * endian; kept for Custom WB, mode 9, else 0). They travel like the other slot bytes: pf_bt (record +57..+60 of EDITS.BIN's
+ * film records), BUNDLES.BIN (build.py: range fields wr_*), pf_put1 / pf_capto. LOOKS.BIN never carries them. */
+.section .ext11,"ax"
+/* pf_wbr: `call pf_wbr,[d2,d3,a2,a3],20` at the end of pf_put1, d0 = COLOR k (0..3): the code block's recall (+152) when there is
+ * one. The block writes setting 1578 (and 1632) through the settings facade SetValue. */
+pf_wbr:
+ mov d0,d2
+ call xp,[],0                     /* clobbers d0 */
+ beq 9f
+ add 152,a1
+ mov d2,d0
+ calls (a1)
+9:
+ ret [d2,d3,a2,a3],20
+
+/* pf_scrub: `call pf_scrub,[],0` from pf_save, a3 = the bank: record bytes +57..+60 of all 20 films <- 0. Uses d0, d1, a0. */
+pf_scrub:
+ mov a3,a0
+ add 32 + 57,a0
+ mov 20,d1
+ clr d0
+1:
+ movbu d0,(a0)
+ movbu d0,(1,a0)
+ movbu d0,(2,a0)
+ movbu d0,(3,a0)
+ add 64,a0
+ add -1,d1
+ bne 1b
+ retf [],0

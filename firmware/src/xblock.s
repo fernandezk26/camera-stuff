@@ -58,6 +58,10 @@ xb_base:
  .balign 8
  jmp xb_wbc                       /* +144 v0.25: the WB grid row's left cell picture (wb_draw, `calls`) */
  .balign 8
+ jmp xb_wbr                       /* +152 v0.26.2: a film's stored WB -> the body (pf_wbr at the end of pf_put1, `calls`, d0 = COLOR k) */
+ .balign 8
+ jmp xb_wbt                       /* +160 v0.26.2: INFO on the WB row: take the body's WB into the film, or let it go (pm_ev, `calls`, d0 = k) */
+ .balign 8
 xb_nrel:
  .long 0                          /* relocation count (written by the build) */
 
@@ -2659,5 +2663,131 @@ xb_wgp:                           /* per glyph: row pointer (+0), width (+20), x
  .long 0, 0, 0, 0, 0
  .long 0, 0, 0, 0, 0
  .long 0, 0, 0, 0, 0
+
+/* ---- v0.26.2: a film's stored WB. Slot S = P + 32 + 64k: +59 flag (0 follows the body, 1 stored), +60 mode (setting 1578,
+ * 0..18), +61 / +62 Kelvin (1632, u16, only for Custom WB = mode 9, else 0). The slot is the live state; film changes
+ * carry it through pf_bt / EDITS.BIN, the half-press save through BUNDLES.BIN. Both entries are `calls` (return word at
+ * (0,sp) of the caller's frame) and keep d2, d3, a2, a3. */
+
+/* xb_set: `call xb_set,[d2,d3,a2,a3],24`. d0 = setting id, a1 = value -> the settings facade SetValue 0x60b8781f, as the stock
+ * WB menu calls it (a0 = the facade object [0x60369acc], d1 = 0). The frame restores d2, d3, a2, a3 whatever the facade does. */
+xb_set:
+ mov (0x60369acc),a0
+ clr d1
+ calls wb_stock_set
+ ret [d2,d3,a2,a3],24
+
+/* xb_wbr (+152): d0 = COLOR k. A stored WB (flag 1, mode <= 18) of the film's slot -> the body: the mode, and for Custom WB
+ * the Kelvin. Nothing stored, no P, k out of range: nothing. */
+xb_wbr:
+ movm [d2,d3,a2,a3],(sp)
+ add -4,sp
+ mov d0,d2
+ cmp 4,d2
+ bcc 9f
+ call xb_p,[],0                   /* a1 = P or 0 */
+ cmp 0,a1
+ beq 9f
+ asl 6,d2
+ add d2,a1
+ add 32,a1
+ mov a1,a2                        /* the slot */
+ movbu (59,a2),d0
+ cmp 1,d0
+ bne 9f
+ movbu (60,a2),d3
+ cmp 19,d3
+ bcc 9f
+ mov 1578,d0
+ mov d3,a1
+ call xb_set,[d2,d3,a2,a3],24
+ cmp 9,d3
+ bne 9f
+ movbu (62,a2),d1
+ asl 8,d1
+ movbu (61,a2),d0
+ or d1,d0
+ mov d0,a1
+ mov 1632,d0
+ call xb_set,[d2,d3,a2,a3],24
+9:
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+ rets
+
+/* xb_wbt (+160): d0 = COLOR k, from pm_ev on INFO (press) on the WB row. Only with a film selected on COLOR k (look 1..5
+ * and a bank): the body's WB mode (and Kelvin for Custom WB) -> the slot, flag 1, DIRTY; when the slot already holds exactly
+ * that, it is let go instead (flag, mode and Kelvin 0: the film follows the body again). A mode above 18: nothing. */
+xb_wbt:
+ movm [d2,d3,a2,a3],(sp)
+ add -4,sp
+ mov d0,d2
+ cmp 4,d2
+ bcc 9f
+ call xb_p,[],0
+ cmp 0,a1
+ beq 9f
+ mov a1,a2                        /* P */
+ mov (P_LPTR,a2),d0
+ cmp 0,d0
+ beq 9f
+ mov a2,a0
+ add d2,a0
+ movbu (P_LIDX,a0),d0
+ extb d0
+ cmp 1,d0
+ blt 9f
+ cmp 5,d0
+ bgt 9f
+ mov d2,d0
+ asl 6,d0
+ add 32,d0
+ mov a2,a3
+ add d0,a3                        /* the slot */
+ mov 1578,d0
+ call sget,[],4
+ extbu d0
+ mov d0,d3                        /* the body's mode */
+ cmp 19,d3
+ bcc 9f
+ clr d2                           /* Kelvin, Custom WB only */
+ cmp 9,d3
+ bne 1f
+ mov 1632,d0
+ call sget,[],4
+ exthu d0
+ mov d0,d2
+1:
+ movbu (59,a3),d0
+ cmp 1,d0
+ bne 3f
+ movbu (60,a3),d0
+ cmp d3,d0
+ bne 3f
+ movbu (62,a3),d0
+ asl 8,d0
+ movbu (61,a3),d1
+ or d1,d0
+ cmp d2,d0
+ bne 3f
+ clr d3                           /* the same as stored: let it go */
+ clr d2
+ clr d0
+ bra 4f
+3:
+ mov 1,d0
+4:
+ movbu d0,(59,a3)
+ movbu d3,(60,a3)
+ movbu d2,(61,a3)
+ lsr 8,d2
+ movbu d2,(62,a3)
+ mov 1,d0
+ movbu d0,(P_DIRTY,a2)
+9:
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+ rets
+
  .balign 4
 xb_end:

@@ -28,7 +28,7 @@ Every row under Picture Mode changes the film (or the COLOR) you're on, at once:
 | **HSL** | The colour wheel (below) |
 | Contrast, Highlight & Shadow | The camera's own |
 | **Blk** / **Wht** | Blacks / Whites, −5..+5: + lifts / brightens, − crushes / softens |
-| **WB** | The WB shift (A-B amber / blue, G-M green / magenta, −7..+7), in every WB mode (Auto WB included). The row shows a small grid with the dot where the shift is, and the numbers under WB± (like "A2.G1"). **OK**, left / right or a dial opens the camera's own WB fine-tune screen; MENU or OK comes back |
+| **WB** | The WB shift (A-B amber / blue, G-M green / magenta, −7..+7), in every WB mode (Auto WB included). The row shows a small grid with the dot where the shift is, and the numbers under WB± (like "A2.G1"). **OK**, left / right or a dial opens the camera's own WB fine-tune screen; MENU or OK comes back. **v0.26.2 (emulator only): INFO** on the row stores the camera's current WB mode (and Kelvin for Custom WB) in the film; INFO again, while the camera still shows exactly that, lets it go. Nothing on screen shows that a WB is stored: check by choosing another film and back |
 | Sharpness | Sharp: the camera's sharpening, −5 = Off, −4..−1 softer, 0 its normal, +1 / +2 crisper |
 | **Noise Filter** | Off / Low / Std / High for photos with this film |
 | **Vignette Correction** | Off = the lens's natural corners, On = the camera's correction |

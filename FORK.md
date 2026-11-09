@@ -9,6 +9,7 @@ to contribute them back. The licence and NOTICE are unchanged.
 | `main` | Upstream `main` (remote `upstream`), plus one commit that stops the release workflow publishing releases from this fork. |
 | `sdload/v0.25.1`, tag `v0.25.1` | Upstream v0.25 + the WB-grid restart fix (a71bd6b, WB part) + automatic SD loading. `releases/v0.25.1/`. |
 | `sdload/v0.26.1`, tag `v0.26.1.1` | Upstream v0.26.1 + automatic SD loading, nothing else. `releases/v0.26.1.1/`. |
+| `wbrecall/v0.26.2` | v0.26.1.1 + a stored WB mode / Kelvin per film (INFO on the WB row takes the body's WB; selecting the film recalls it). Emulator only. `releases/v0.26.2/`. |
 
 No OM firmware is stored here: `releases/*/patch.json` hold only the bytes the patch writes. Contributions go upstream as
 pull requests from a branch rebased on upstream `main`.

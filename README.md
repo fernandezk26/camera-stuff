@@ -8,6 +8,9 @@ Saturation), and adds the look's settings to the camera's own Picture Mode scree
 Noise Filter, lens vignette correction, Shading, Glow / Clarity and fast colour film grain. Films are made in the browser with the **Caduceus Control
 Panel**; changes you make on the camera are kept per film.
 
+> [!NOTE]
+> **Branch `wbrecall/v0.26.2` (downstream fork, emulator only, not camera-tested):** v0.26.1.1 plus a stored WB mode / Kelvin per film (INFO on the WB row). See `releases/v0.26.2/NOTES.md`.
+
 **Latest: v0.26.1** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
 **[Using it](#using-it)** · **[Roadmap](ROADMAP.md)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 

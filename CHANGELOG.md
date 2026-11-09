@@ -3,6 +3,18 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.26.2 (stored WB per film)
+v0.26.1.1 plus a stored white balance per film, nothing else. Emulator only; no camera test yet. Downstream build; not an upstream release.
+
+- **A film can recall the body's WB mode and Kelvin.** On the WB row of Picture Mode (a COLOR holding a film), **INFO** copies the
+  camera's current WB mode (and, for Custom WB, its Kelvin) into the film; INFO again, while the body still shows exactly that, lets
+  it go (the film follows the body again). Selecting that film later writes the stored mode (and Kelvin) back to the camera's WB, once,
+  when the film changes (not at power-on, not when you pick the film already on). The WB shift (A-B / G-M) is separate and unchanged.
+- Kept like the other changes: `BUNDLES.BIN` (live, at the half-press) and `EDITS.BIN` (when you leave the film). `LOOKS.BIN` and the
+  Control Panel are untouched; the camera clears the four bytes from `LOOKS.BIN` before it writes it. An older firmware refuses a
+  `BUNDLES.BIN` that carries a stored WB (the COLOR 1–4 slot bank then starts neutral until its next save; `BUNDLES.BAK` is the previous file).
+- Space: `.ext3` +8, `.ext9` +16, `.ext11` +64 bytes; the `GUIDES.BIN` code block +280 (new entries +152, +160). Format notes: `docs/FORMATS.md`.
+
 ## v0.26.1.1 (SD loader)
 v0.26.1 plus automatic SD loading, nothing else. Emulator only; no camera test yet. Downstream build; not an upstream release.
 

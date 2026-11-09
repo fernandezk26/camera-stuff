@@ -120,14 +120,16 @@ RANGES = {'hue': (-7, 7), 'light': (-7, 7), 'grain': (0, 6), 'wb_flags': (0, 1),
           'wb_gm': (-7, 7), 'effect_id': (0, 3), 'effect_strength': (0, 5), 'vignette': (-5, 5),
           'flags': (0, 3), 'colour': (0, 1), 'sat': (-5, 5), 'bloom_tint': (0, 4), 'art_effect': (0, 5),
           'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5), 'vig': (0, 1), 'fgrain': (0, 3), 'sharp': (-5, 2),
-          'sh_col': (0, 11), 'sh_str': (-5, 5), 'hl_col': (0, 11), 'hl_str': (-5, 5)}   # v0.26 split toning
+          'sh_col': (0, 11), 'sh_str': (-5, 5), 'hl_col': (0, 11), 'hl_str': (-5, 5),   # v0.26 split toning
+          'wr_flag': (0, 1), 'wr_mode': (0, 18), 'wr_k': (-128, 127)}   # v0.26.2 stored WB (the Kelvin bytes: any value, as signed bytes)
 
 
 def range_table():
     lay = json.loads(LAYOUT.read_text())
     fields = dict(lay['fields']); fields.update(lay['color_fields'])
     fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1], 'vig': [52, 1], 'fgrain': [53, 1], 'sharp': [54, 1],
-                   'sh_col': [55, 1], 'sh_str': [56, 1], 'hl_col': [57, 1], 'hl_str': [58, 1]})   # OM-3 Extras (v0.20; VigFix v0.21; Sharp v0.22)
+                   'sh_col': [55, 1], 'sh_str': [56, 1], 'hl_col': [57, 1], 'hl_str': [58, 1],
+                   'wr_flag': [59, 1], 'wr_mode': [60, 1], 'wr_k': [61, 2]})   # OM-3 Extras (v0.20; VigFix v0.21; Sharp v0.22)
     lo, hi = [0] * 64, [0] * 64
     for name, (off, n, *_) in fields.items():
         a, b = RANGES[name]
@@ -467,7 +469,7 @@ def make_xblock(out, sy, xtag):
                STATE=sy['STATE'], HMAX=sy['HMAX'], POOL=sy['POOL'], MAGIC=sy['MAGIC'], BUFIDX=0x604afdf9, SF_ENT=0x604be2aa, LOCK=0x60075f73, UNLOCK=0x60075fbc, WINMAP=0x60071018, FLUSH=0x60070e69, free=0x6002409a,
                SEL=0x6052cf39, fwrite=0x608d4da9, PF_CAPTO=sy['pf_capto'], PF_CAP=sy['pf_cap'], E_LK=sy['e_lk'], E_RET=sy['e_ret'], E_RST=sy['e_rst'], REFRESH=0x611b20ea, XT_TAB=sy['xt_tab'], EMARK=680, EMAGIC=0x45334d4f,
                FL_HAS=sy['fl_has'], FACADE=0x60b8696a, AGET=0x603f039d, TXGET=0x604cd921, TXATT=0x604bc0cf, TXPF=0x604b77fb, TWO=sy['TWO'], TW_LEN=sy['TW_LEN'], FV0=sy['FV0'],
-               WB_V=sy['wb_v'], wb_wtk=sy['wb_wtk'], wb_wem=sy['wb_wem'])
+               WB_V=sy['wb_v'], wb_wtk=sy['wb_wtk'], wb_wem=sy['wb_wem'], wb_stock_set=0x60b8781f, sget=0x603f0111)
     sys.path.insert(0, str(ROOT / 'firmware'))
     import mkicons                                # v0.25 WB grid row: the left cell's glyphs (xblock xb_wbc)
     inc = ''.join(f'.set {k}, {getattr(mkicons, k)}\n' for k in ('WBC_IX', 'WBC_IY', 'WBC_TY', 'WBC_GH'))

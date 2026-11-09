@@ -474,6 +474,27 @@ v0.24 (below) with two changes; v0.24 itself was withdrawn and `releases/v0.24` 
 - Firmware `E1479999.BIN` 6fbc80b8…, `GUIDES.BIN` 112e8f93… (7 bytes differ from the GUIDES-only hotfix: code
   addresses after `pm_list` moved by one word), `LABELS.BIN` unchanged.
 
+## v0.26.2 stored WB per film (branch wbrecall/v0.26.2; emulator only, no camera test)
+
+Research trail: `research/caduceus-wb-recall-feasibility/REPORT.md` and `research/caduceus-v026-wbrecall/REPORT.md` in the owner's
+research workspace (not in this repository).
+
+- **Bytes:** slot `+59` flag, `+60` mode (setting 1578, 0..18), `+61 / +62` Kelvin (1632, u16 LE; Custom WB only). `pf_bt` has four new
+  pairs (record `+57..+60` <-> slot `+59..+62`; both loop ends `pf_bt+38`), so `pf_capto` (leaving a film, `xb_lkd`'s scratch compare) and
+  `pf_put1` (loading a film) carry them. `firmware/build.py` `RANGES` / `range_table`: fields `wr_flag`, `wr_mode`, `wr_k` so `BUNDLES.BIN`
+  (written whole by `ed_save`) is accepted. `pf_lo` is untouched: `LOOKS.BIN` record `+57..+63` stay 0 (a non-zero byte makes the camera refuse
+  the whole file). `pf_scrub` (ext11, called from `pf_save`) zeroes record `+57..+60` of all 20 films before every `LOOKS.BIN` write, because
+  `pf_cap` (xblock `xb_lkh`'s save-to-look path) would otherwise copy the slot's WB into the bank.
+- **Recall:** end of `pf_put1` -> `pf_wbr` (ext11) -> code block entry `+152` `xb_wbr` (d0 = COLOR k): flag 1 and mode <= 18 -> facade SetValue
+  `0x60b8781f` (a0 = [0x60369acc], d1 = 0) for 1578, and for mode 9 for 1632. Runs when the film (look) of a COLOR changes (`fl_set` -> `fl_sw`);
+  not when the same film is picked again, not for COLOR k itself (look 0 loads zeros), not at power-on.
+- **Take:** `pm_ev` on INFO press (0x9014) with `gr_flag` (our WB row) -> entry `+160` `xb_wbt`: only with a bank and a film (look 1..5) on
+  COLOR k; body mode / Kelvin (settings 1578 / 1632 through `sget`) -> slot, flag 1, `DIRTY`; the same as stored -> let go (all four bytes 0). The
+  stock handler then runs (INFO is a no-op on that row; the release 0x9015 is not consumed).
+- **Reset:** the Hue/Light page reset loop (`mov 59,d1`, `ed_event`) is unchanged: it does not clear the stored WB. Hold OK on a film (= as built) loads
+  the as-built record (flag 0), so the film stops forcing the WB.
+- **Space:** `.ext3` 483 / 492, `.ext9` 378 / 384, `.ext11` 64608 / 65536, `GUIDES.BIN` 13480 B (local-font build) of 16448.
+
 ## v0.24 films in the Picture Mode list (branch feature/v0.24-film-list; camera-tested 2026-11-08)
 
 Includes the v0.23 Picture Mode rows (never released alone). Full trail: `research/NOTES.md` ("Picture-mode sliders",

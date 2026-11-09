@@ -2086,3 +2086,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Released as v0.26.1 from build wb7: the branch rebuilds it byte for byte (E1479999.BIN dec03d2f…, GUIDES.BIN
   d2476a54…), and `patch.py --release v0.26.1` reproduces the same files. Optional LOOKS.BIN 26998eeb… (the tuned 20).
 
+## v0.26.2: stored WB per film (2026-11-09; emulator only, camera test pending; branch wbrecall/v0.26.2)
+- A film keeps a WB mode (setting 1578) and, for Custom WB, a Kelvin (1632) in four new slot / record bytes; INFO on the Picture Mode WB row takes the
+  camera's current WB into the film (again = let go); a film change writes it back through the facade SetValue 0x60b8781f. Design and byte map:
+  docs/DEVELOPER_NOTES.md ("v0.26.2"), docs/FORMATS.md. Emulator (om-emu 147ca89c): take, leave, return writes 1578 / 1632 (also from inside `fl_sw`'s
+  nested facade call; no fault), COLOR k itself and the same film write nothing, BUNDLES.BIN / EDITS.BIN round trip over a power cycle, the v0.26.1.1
+  build refuses a BUNDLES.BIN with the new bytes (slot bank neutral), reads an EDITS.BIN with them without effect, the port reads v0.26.1.1's files,
+  autoload still publishes within 500 ms, the drive-mode recipe and the Shadows / Highlights INFO walk match the unmodified build.
+  Not known: any camera behaviour (the WB write from the film switch on the body, Creative Dial COLOR routes, power-off timing).
+
