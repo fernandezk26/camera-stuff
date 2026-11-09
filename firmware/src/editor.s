@@ -4348,16 +4348,19 @@ ic_stk:
 /* v0.25 WB grid row (owner 2026-11-08): one row (AB_IT, a one-option choice row as sliders test 12) for the look's
  * A-B / G-M. On it the Picture Mode screen shows the camera's WB grid (scene 498, element 24813) in the holder of its
  * bottom-bar layer 457 (sc_cap, gr_upd from the screen's update 0x611d04ec; property 256 via gr_pub, as sliders
- * test 13), and OK, left / right or a dial open the camera's own WB fine-tune screen (0x0408, pm_ev) with
- * gr_flag = look + 1: the facade answers its stills ids (A-B 1580..1592, G-M 1593..1605 by WB mode) from the look's
- * slot +26 / +27 (gr_id -> our ABB / GMB + k), so it shows and changes the look's values with the camera's own
- * directions and numbers. gx_map: MENU there comes back to our row (0x0417 -> 0x0418, gr_hold / gr_row), any other
- * way out or leaving Picture Mode clears the flag. The row's left cell is drawn from the values (wb_draw, xb_wbc). */
+ * test 13), and OK, left / right or a dial open (v0.26.4) the camera's own WB screen (0x0417, pm_ev: WB mode, Custom
+ * WB Kelvin, Keep Warm, and its WB+- cell) with gr_flag = look + 1 and gr_fine = 1: the facade answers the stills ids
+ * (A-B 1580..1592, G-M 1593..1605 by WB mode) from the look's slot +26 / +27 (gr_id -> our ABB / GMB + k), so the
+ * WB+- cell shows the look's shift and its icon opens the fine-tune screen (0x0408, v0.26.1's route, one step deeper)
+ * that changes the look's values with the camera's own directions and numbers. A WB mode / Kelvin change there is
+ * stored in the film by sl_wb (v0.26.3). gx_map: MENU in the WB screen comes back to our row (0x0417 -> 0x0418,
+ * gr_hold / gr_row), MENU in the fine-tune screen to the WB screen (stock); any other way out (OK, half-press, a
+ * time-out) or leaving Picture Mode clears the flags. The row's left cell is drawn from the values (wb_draw, xb_wbc). */
 .set GLY, 456                     /* Picture Mode's bottom-bar layer: its holder takes the WB grid (498) on our row */
 .balign 4
 gr_flag:
  .long 0
-gr_fine:                          /* 1 while the WB fine-tune screen is open from our row (pm_ev) */
+gr_fine:                          /* 1 while the WB screen (0x0417) or its fine-tune screen (0x0408) is open from our row (pm_ev) */
  .long 0
 gr_hold:                          /* 1 from MENU in it to Picture Mode's first row-memory write (as test 12) */
  .long 0
@@ -4898,10 +4901,10 @@ pu_hook:
  jmp pu_back
 
 /* pm_ev <- jmp from the Picture Mode handler 0x6125becc (calls: d0 event, d1, a0, a1): on our WB row on COLOR 1-4
- * (gr_flag set by gr_upd), the events that open the WB fine-tune screen from
+ * (gr_flag set by gr_upd), the events that open the camera's WB screen (v0.26.4; v0.25 - v0.26.3: the fine-tune screen) from
  * the camera's WB± row (0x6125bc8b: 0x900c OK, 0x9031 / 0x9032 dials, 0xf83c, 0x9755 with code 9; and left / right
  * 0x9008 / 0x900a) -> gr_flag = look
- * + 1, gr_fine = 1, d0 = 0x0408 (as sliders test 12; on the camera OK was not 0x900c there); else stock. */
+ * + 1, gr_fine = 1, d0 = 0x0417 (as sliders test 12 did with 0x0408; on the camera OK was not 0x900c there); else stock. */
 pm_ev:
  movm [d2,d3,a2,a3],(sp)
  add -40,sp                       /* (0,sp) our call's slot; d0, d1, a0, a1, mdr kept; (24..39) the event's data */
@@ -4958,7 +4961,7 @@ pm_ev:
  mov d2,mdr
  add 40,sp
  movm (sp),[d2,d3,a2,a3]
- mov 0x0408,d0
+ mov 0x0417,d0                   /* v0.26.4: the camera's own WB screen (was the fine-tune screen 0x0408) */
  mov 8,d1
  rets
 8:
@@ -4984,23 +4987,42 @@ gx_map:
  mov (8,sp),a0
  movhu (a0),d1
  cmp 0x0804,d1                    /* leaving the WB fine-tune screen (0x0408) */
- bne 5f
+ bne 3f
  movbu (gr_fine),d1
  cmp 0,d1
  beq 9f                           /* not opened from our row: stock */
- clr d1
- movbu d1,(gr_fine)
  mov d0,d1
  exthu d1
- cmp 0x0417,d1                    /* MENU: back to Picture Mode on our row, not to the WB screen */
+ cmp 0x0417,d1                    /* v0.26.4: MENU goes back to the camera's WB screen (stock), still opened from our row */
+ beq 9f
+ bra 4f                           /* anywhere else (OK, half-press: live view): Picture Mode and its holder are gone */
+3:
+ cmp 0x1704,d1                    /* v0.26.4: leaving the camera's WB screen (0x0417) */
+ bne 5f
+ movbu (gr_fine),d1
+ cmp 0,d1
+ beq 9f                           /* not opened from our row (SCP, a button): stock */
+ mov d0,d1
+ exthu d1
+ cmp 0x0408,d1                    /* its shift icon: the grid (stock), the film's own shift (gr_id), still ours */
+ beq 9f
+ cmp 0x0104,d1                    /* a way out to live view: only MENU goes back to Picture Mode on our row */
  bne 4f
+ mov (16,sp),d1                   /* the event that ends the screen (the dispatcher's frame, as gx_map's (8,sp)): MENU 0x900e.
+                                   * OK (0x900c) must not: its stock handler posts the leave itself, and Picture Mode then
+                                   * stops taking keys (emulator); OK / the shutter keys / a time-out leave to live view as stock */
+ cmp 0x900e,d1
+ bne 4f
+ clr d1
+ movbu d1,(gr_fine)
  mov 0x0418,d0
  mov 1,d1
  movbu d1,(gr_hold)
  movbu d1,(gr_wait)
  bra 9f
 4:
- clr d1                           /* to anywhere else (OK, half-press: live view): Picture Mode and its holder are gone */
+ clr d1                           /* to anywhere else: Picture Mode and its holder are gone */
+ movbu d1,(gr_fine)
  movbu d1,(gr_flag)
  movbu d1,(gr_wait)
  mov d1,(gr_cont)
