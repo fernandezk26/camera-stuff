@@ -4357,6 +4357,8 @@ gr_cont:                          /* the holder of Picture Mode's layer 457, cap
  .long 0
 gr_sv:
  .long 0, 0, 0, 0
+gr_st:                            /* v0.26: the GUI state gx_map last sent the screen to */
+ .long 0
 gr_blk:                           /* the grid's block (property 256, 18 B, as the WB screen's +5188 from 0x611d257a):
                                    * B / A / G / M box states 3, flags, A-B line x, G-M line y, dot x / y */
  .byte 3, 3, 3, 3, 0, 0, 0, 0
@@ -4675,6 +4677,10 @@ gr_now:
  * empties (-1) when it opens; on our row we load 485 into it again, and empty it when the row or the screen goes. */
 sc_cap:
  cmp GLY,d0
+ bne 1f
+ mov (gr_st),d3                   /* v0.26 (camera: COLOR 1 after the drive mode screen restarted it): only Picture Mode's
+                                   * load; other screens' bottom bars (e.g. the drive mode list) use 456 too and go away */
+ cmp 0x0418,d3
  bne 1f
  movbu (gr_fine),d3               /* not while the fine-tune screen is open from our row (its own 457 holder goes away;
                                    * Picture Mode's stays) */
@@ -4997,6 +5003,12 @@ gx_map:
  bne 9f
  mov d1,(gr_cont)                 /* else the holder may go with the screen: captured again when 457 loads */
 9:
+ mov d0,d1                        /* v0.26: the screen we go to (sc_cap takes the holder only for Picture Mode) */
+ exthu d1
+ cmp 0,d1
+ beq 91f
+ mov d1,(gr_st)
+91:
  mov d0,d3
  exthu d3
  mov d3,d2
