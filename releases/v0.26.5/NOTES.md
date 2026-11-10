@@ -1,7 +1,7 @@
 # Caduceus for OM-3 v0.26.5 (the camera's own WB screen from the WB row, no grid on the row, no redirect on the way out)
 
 **v0.26.4 with two changes, nothing else.** A downstream build of [androidfanman/caduceus-om3](https://github.com/androidfanman/caduceus-om3) v0.26.1.
-**Emulator only: no camera test of this build.** v0.26.4 was tried on a camera: after changing the WB in the camera's WB screen and pressing MENU, live view froze, and then the
+**Camera: the owner tested it (9 November 2026) and reports that the WB screen from the WB row and the new menu behaviour work; no further detail was reported.** v0.26.4 was tried on a camera: after changing the WB in the camera's WB screen and pressing MENU, live view froze, and then the
 whole camera froze at the next half-press (battery out). The cause is not proven.
 
 - **The WB row no longer shows the grid.** The row shows only "WB" and its small WB± icon. OK (or left / right / a dial) opens the camera's own WB screen, and

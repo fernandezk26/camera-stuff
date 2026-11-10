@@ -4,7 +4,7 @@ Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while
 same number is used here (test 17 = v0.17).
 
 ## v0.26.5 (no grid on the WB row; the WB screen's exits are the camera's own)
-v0.26.4 plus two changes. Emulator only; no camera test yet. Downstream build; not an upstream release. Reason: v0.26.4 froze on a camera (live view after MENU in the WB screen, then the camera at the next half-press; cause not proven).
+v0.26.4 plus two changes. Camera: the owner reports the camera's WB screen from the WB row and the new menu behaviour work (no further detail reported; the half-press / OK exits were not separately reported). Downstream build; not an upstream release. Reason: v0.26.4 froze on a camera (live view after MENU in the WB screen, then the camera at the next half-press; cause not proven).
 
 - **The WB row of Picture Mode (COLOR 1-4) no longer shows the grid** in the bottom bar. OK / left / right / a dial still open the camera's own WB screen; its WB+- icon opens the grid with the film's shift.
 - **No redirect when the camera's WB screen ends:** MENU, OK, half-press and time-out are the camera's own (v0.26.4 sent MENU back to the WB row). MENU in the fine-tune grid still goes back to the WB screen.
