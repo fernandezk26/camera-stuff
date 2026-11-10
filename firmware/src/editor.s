@@ -4711,8 +4711,9 @@ sc_cap:
  bne 1f
  mov gr_cont,a1
  mov a0,(a1)
- movbu (gr_flag),d3               /* on our row (entering Picture Mode, back from the fine-tune screen: its first
-                                   * update comes before it loads its bottom bar, 457) that load takes the grid (498) */
+ bra 1f                           /* v0.26.5 (owner): no grid on the WB row any more, the load stays Picture Mode's own (the grid
+                                   * only shows in the camera's fine-tune screen, one step deeper); was: on our row that load took 498 */
+ movbu (gr_flag),d3
  cmp 0,d3
  beq 1f
  clr d3
@@ -4741,6 +4742,7 @@ gr_upd:
  mov 1,d1
  call ch_id,[d2,d3,a2],20         /* picture mode -> 1..4, else 0 */
  movbu d0,(gr_flag)
+ bra 9f                           /* v0.26.5 (owner): gr_flag (= look + 1) only; the row no longer shows the grid in the bottom bar */
  cmp 0,d0
  beq 8f
  movbu (gr_wait),d0               /* back from the fine-tune screen: not before Picture Mode reloads its bottom bar
@@ -5006,20 +5008,8 @@ gx_map:
  exthu d1
  cmp 0x0408,d1                    /* its shift icon: the grid (stock), the film's own shift (gr_id), still ours */
  beq 9f
- cmp 0x0104,d1                    /* a way out to live view: only MENU goes back to Picture Mode on our row */
- bne 4f
- mov (16,sp),d1                   /* the event that ends the screen (the dispatcher's frame, as gx_map's (8,sp)): MENU 0x900e.
-                                   * OK (0x900c) must not: its stock handler posts the leave itself, and Picture Mode then
-                                   * stops taking keys (emulator); OK / the shutter keys / a time-out leave to live view as stock */
- cmp 0x900e,d1
- bne 4f
- clr d1
- movbu d1,(gr_fine)
- mov 0x0418,d0
- mov 1,d1
- movbu d1,(gr_hold)
- movbu d1,(gr_wait)
- bra 9f
+ bra 4f                           /* v0.26.5: every other way out (MENU, OK, half-press, a time-out) is the stock one, to live view: the camera froze
+                                   * after v0.26.4's MENU redirect to Picture Mode (camera 2026-11-09), which skipped the screen's own teardown */
 4:
  clr d1                           /* to anywhere else: Picture Mode and its holder are gone */
  movbu d1,(gr_fine)
