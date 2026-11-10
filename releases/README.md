@@ -36,3 +36,4 @@ Each version is also published on the repo's **Releases** page (tag `v0.16` … 
 it was at that version: a GitHub Action (`.github/workflows/releases.yml`) publishes every folder here once, so a
 new version only needs its folder.
 See [CHANGELOG.md](../CHANGELOG.md) for the full history.
+- **v0.26.5** (downstream, emulator only): v0.26.4 with no grid on the WB row and the camera's own exits from its WB screen (v0.26.4 froze on a camera).
